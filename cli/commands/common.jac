@@ -13,10 +13,32 @@ glob EXIT_OK: int = 0,
      EXIT_TIMEOUT: int = 4,
      EXIT_REJECTED: int = 5;
 
-glob START_HINT: str = "hint: start the site with `jac run web`";
+glob START_HINT: str = "hint: start the planner with `jac run` (serves the web app + backend at :8000)";
 
 def warn(text: str) {
     print(text, file=sys.stderr);
+}
+
+def short_id(full_id: str) -> str {
+    return full_id[:8];
+}
+
+def resolve_id(prefix: str, ids: list[str], label: str) -> str | None {
+    if not prefix {
+        warn(f"{label}: an id is required");
+        return None;
+    }
+    needle = prefix.strip().lower();
+    matches = [i for i in ids if i.lower().startswith(needle)];
+    if not matches {
+        warn(f"{label}: no match for '{prefix}'");
+        return None;
+    }
+    if len(matches) > 1 {
+        warn(f"{label}: '{prefix}' is ambiguous ({len(matches)} matches) - use more characters");
+        return None;
+    }
+    return matches[0];
 }
 
 def _suffix(detail: str) -> str {
@@ -26,19 +48,18 @@ def _suffix(detail: str) -> str {
 def explain_bridge_error(e: BridgeError) -> int {
     where = e.app + "." + e.name;
     if isinstance(e, BridgeUnavailable) {
-        warn("jacorg: " + where + " is not reachable" + _suffix(e.detail));
+        warn("planner: " + where + " is not reachable" + _suffix(e.detail));
         warn(START_HINT);
         return EXIT_UNAVAILABLE;
     }
     if isinstance(e, BridgeTimeout) {
-        warn("jacorg: " + where + " timed out" + _suffix(e.detail));
+        warn("planner: " + where + " timed out" + _suffix(e.detail));
         return EXIT_TIMEOUT;
     }
     if isinstance(e, BridgeRejected) {
-        warn("jacorg: " + where + " rejected the call" + _suffix(e.detail));
-        warn("hint: the site wants a signed-in identity for this command");
+        warn("planner: " + where + " rejected the call" + _suffix(e.detail));
         return EXIT_REJECTED;
     }
-    warn("jacorg: " + where + " failed" + _suffix(e.detail));
+    warn("planner: " + where + " failed" + _suffix(e.detail));
     return EXIT_FAILURE;
 }
