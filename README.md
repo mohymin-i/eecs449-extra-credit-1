@@ -75,15 +75,16 @@ export JAC_APP_SERVER_URL="http://localhost:8001"
 export JAC_APP_SERVER_ROUTE="/api/server"
 
 jac run cli -- today
+
+jac run cli -- courses
+jac run cli -- course add "EECS 449" --color "#00aaff"
+jac run cli -- course rm <id-prefix>
+
 jac run cli -- add "Finish lab report" --date 2026-10-05 --priority high --course "EECS 449"
 jac run cli -- list                      # open tasks (add --all to include completed)
 jac run cli -- done <id-prefix>          # toggle complete; ids/prefixes come from `list`/`today`
 jac run cli -- rm <id-prefix>            # delete a task
 jac run cli -- breakdown <id-prefix>     # AI subtask suggestions
-
-jac run cli -- courses
-jac run cli -- course add "EECS 449" --color "#00aaff"
-jac run cli -- course rm <id-prefix>
 
 jac run cli -- habits
 jac run cli -- habit add "Stretch" --target 7
@@ -91,7 +92,7 @@ jac run cli -- habit done <id-prefix>    # toggle today's completion
 jac run cli -- habit rm <id-prefix>
 ```
 
-IDs only need to be typed as an unambiguous prefix (shown in `list`/`today`/`habits` output) — no need to copy the full id.
+IDs only need to be typed as an unambiguous prefix (shown in `list`/`today`/`habits` output) — no need to copy the full id. `--course` is optional on `add`; if the named course doesn't exist yet, the task is still added (just without a course link) and a warning is printed.
 
 Without the two `JAC_APP_SERVER_*` variables set, the CLI correctly refuses with a clear "server is not reachable" error rather than silently using its own disconnected copy of the data.
 
@@ -103,6 +104,11 @@ Mobile needs the same two environment variables, for the same reason (it has no 
 export JAC_APP_SERVER_URL="http://localhost:8001"
 export JAC_APP_SERVER_ROUTE="/api/server"
 
+# One-time warm-up (works around a jac 0.37.23 dev-server quirk where the very
+# first `--dev` run against a clean .jac/ cache fails to resolve the client
+# entry module — a plain build first avoids it):
+jac build mobile --platform web
+
 # Browser preview (fastest — no SDK required):
 jac run --dev --platform web mobile
 # then open the printed localhost URL (typically http://localhost:8003)
@@ -110,6 +116,8 @@ jac run --dev --platform web mobile
 # Real device / Expo Go (needs Android SDK or Xcode, provisioned automatically on first run):
 jac run --dev mobile
 ```
+
+If `--dev --platform web mobile` ever shows a Vite overlay error about `/mobile/compiled/_entry.js` failing to resolve, stop it, run `jac build mobile --platform web` once, and start `--dev` again — this is a one-time warm-up, not something that recurs once `.jac/client/mobile` has a successful build in it.
 
 The app has three tabs — Today, Tasks, Habits — covering quick-add, toggling tasks/habits complete, deleting tasks, and AI breakdown, mirroring the web app's core actions in a phone-friendly layout.
 
